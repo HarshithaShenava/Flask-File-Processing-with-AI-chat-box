@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Excel Files</title>
+
+    <!-- Link to Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Link to external CSS -->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="form-container">
+        <div class="image-section"></div>
+        <div class="form-section">
+            <h1>Excel File Processor</h1>
+
+            {% if request.args.get('msg') %}
+            <p class="success">{{ request.args.get('msg') }}</p>
+            {% endif %}
+
+            <div class="upload-section" id="step1">
+                <form action="/upload" method="POST" enctype="multipart/form-data" onsubmit="showLoader(); disableButtons();">
+                    <input type="file" name="file" id="file1" required>
+                    <button type="submit" class="btn" id="uploadBtn1" {% if first_file_uploaded %} disabled {% endif %}>Upload File</button>
+                </form>
+            </div>
+
+            <div id="error-bubble" class="error-bubble" style="display:none;">
+                Please upload raw file only...
+            </div>
+
+            {% if files_generated %}
+            <div class="message">
+                <h3>Your files are ready for download!</h3>
+                <a href="{{ url_for('download_original_file') }}" class="btn download-btn" download>Original Data</a>
+                <a href="{{ url_for('download_fixed_file') }}" class="btn download-btn" download>Fixed Data</a>
+                <a href="{{ url_for('download_book2_file') }}" class="btn download-btn" download>Variable Data</a>
+            </div>
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    document.getElementById('uploadBtn1').disabled = true;
+                    document.querySelector('.generate-btn').disabled = true;
+                });
+            </script>
+            {% endif %}
+
+            <div id="loader-container" style="display: none;">
+                <div id="loader">
+                    <div class="loader-circle">/</div>
+                </div>
+                <p id="loading-message">Please wait ... files are generating</p>
+            </div>
+
+            <div class="button-section-bottom">
+                <form action="/generate_files" method="POST" onsubmit="showLoader(); disableButtons();" class="inline-form">
+                    <button type="submit" class="btn generate-btn" id="generateBtn" {% if not first_file_uploaded %} disabled {% else %} enabled {% endif %}>Generate</button>
+                </form>
+                <a href="/re_upload" class="btn re-upload-btn">ReUpload</a>
+                <a href="/logout" class="btn logout-btn" style="position: absolute; bottom: 10px; left: 10px;">Logout</a>
+            </div>
+
+            <!-- AI Chatbot Section -->
+            <div class="chatbot-section" style="display: none;">
+                <h3>Ask Dox.ai</h3>
+                <div id="chat-container">
+                    <div id="chat-box"></div>
+                    <textarea id="chat-input" placeholder="Type your message here..."></textarea>
+                    <button id="send-btn" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Icon -->
+    <div class="chat-icon" onclick="toggleChat()">
+        <img src="{{ url_for('static', filename='chat-icon.png') }}" alt="Chat Icon">
+    </div>
+
+    <script>
+        function showLoader() {
+            document.getElementById('loader-container').style.display = 'flex';
+        }
+
+        function disableButtons() {
+            document.getElementById('uploadBtn1').disabled = true;
+            document.querySelector('.generate-btn').disabled = true;
+        }
+
+        function showErrorBubble() {
+            var errorBubble = document.getElementById('error-bubble');
+            errorBubble.style.display = 'block';
+            setTimeout(function() {
+                errorBubble.style.display = 'none';
+            }, 3000);
+        }
+
+        document.getElementById('file1').addEventListener('change', function() {
+            var file = this.files[0];
+            if (file && file.name.split('.').pop().toLowerCase() !== 'txt') {
+                showErrorBubble();
+            }
+        });
+
+        // Chatbot JavaScript
+        function sendMessage() {
+            const userMessage = document.getElementById("chat-input").value;
+            if (!userMessage.trim()) return;
+
+            // Display user message
+            const chatBox = document.getElementById("chat-box");
+            const userMessageDiv = document.createElement("div");
+            userMessageDiv.textContent = "You: " + userMessage;
+            userMessageDiv.classList.add("user-message");
+            chatBox.appendChild(userMessageDiv);
+
+            // Send message to the server
+            fetch("/dox_ai", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ message: userMessage }),
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    // Display AI response
+                    const aiMessageDiv = document.createElement("div");
+                    aiMessageDiv.textContent = "Dox.ai: " + data.response;
+                    aiMessageDiv.classList.add("ai-message");
+                    chatBox.appendChild(aiMessageDiv);
+
+                    // Scroll to the bottom of the chat
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                })
+                .catch((error) => {
+                    console.error("Error:", error);
+                });
+
+            // Clear input field
+            document.getElementById("chat-input").value = "";
+        }
+
+        function toggleChat() {
+            const chatSection = document.querySelector('.chatbot-section');
+            chatSection.style.display = chatSection.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Splash Screen</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script>
+        setTimeout(function() {
+            window.location.href = "{{ url_for('login') }}";
+        }, 3000);  // 8 seconds delay
+    </script>
+</head>
+<body>
+    <div class="splash-container">
+        <h1>Welcome</h1>
+        <img src="{{ url_for('static', filename='abc.png') }}" alt="Centered Image">
+    </div>
+</body>
+</html>
